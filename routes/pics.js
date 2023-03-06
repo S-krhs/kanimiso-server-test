@@ -1,31 +1,62 @@
 const { PrismaClient } = require('@prisma/client');
 const express = require('express');
 const router = express.Router();
+//const Memcached = require('memcached');
 
 const prisma = new PrismaClient();
+//const memcachedClient = new Memcached('localhost:11211');
 
-router.get('/', async (req, res, next) => {
+
+//const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+//const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+//const { PollyCustomizations } = require('aws-sdk/lib/services/polly');
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3();
+
+var toString = Object.prototype.toString
+
+router.get('/', async (req, res) => {
   try {
-    console.log("データベースとの接続を開始します。");
-    const allPics = await prisma.test.findMany();
-    console.log("データの取得に成功しました。");
-    res.json(allPics);
+    console.log("データの取得を開始します。");
+    data = await prisma.works.findMany();
+    data.map(d=>{
+      d.path = process.env.S3_ENDPOINT + decodeURI(d.path);
+    })
+
+    res.setHeader('Content-Type', 'text/javascript');
+    res.send(data);
+
+    // ToDo:Cache
+
+    // const imageArray = await Promise.all(
+    //   images.map(async (image) => {
+    //     const params = {
+    //       Bucket: process.env.BUCKET_NAME,
+    //       Key: decodeURI(image.path)
+    //     };
+    //     const imageData = await s3.getObject(params).promise();
+
+    //     return {
+    //       "name":image.timestamp,
+    //       "body": imageData.Body
+    //     };
+    //   })
+    // );
+
+    //const imageArrayJson = JSON.stringify(imageArray);
+
+    
+    //res.send(imageArrayJson);
+    //res.send(images);
+
   } catch (e) {
     console.log("データの取得に失敗しました。:", e);
-    next(e);
+    console.error(e.stack);
+    res.status(500).send('Server Error');
+  }finally{
+    prisma.$disconnect();
+    console.log("データベースとの接続を終了しました。");
   }
-});
-
-// エラーハンドリングの例外処理
-router.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Server Error');
-});
-
-// プロセス終了時にPrismaClientの接続を切断
-process.on('beforeExit', () => {
-  prisma.$disconnect();
-  console.log("データベースとの接続を終了しました。");
 });
 
 module.exports = router;

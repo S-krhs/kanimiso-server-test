@@ -16,3 +16,9 @@ model test{
   name String
   path String
 }
+
+model works{
+  id Int @id @default(autoincrement())
+  timestamp String
+  path String
+}
