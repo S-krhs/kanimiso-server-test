@@ -4,11 +4,6 @@ const router = express.Router();
 
 const prisma = new PrismaClient();
 
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
-
-var toString = Object.prototype.toString
-
 router.get('/', async (req, res) => {
   try {
     console.log("データの取得を開始します。");
